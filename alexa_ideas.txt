@@ -1,0 +1,91 @@
+(Also have separate dive in Pi already set up for sound with drive in playground on/off during commecial and a PI zero W for Westchester clock so sound wont interfere with other sounds)
+ 
+X-10 Display startup with Raspberry Pi
+
+Have a display startup presentation:
+
+Using Alexa “turn on Xmas Display” (smartplug) ... Alexa says “startup will begin in ?? seconds” = time for X-10 Raspberry Pi to boot up. Display lights light up except for Vegas.
+
+Upon boot up, Rasp X-10 starts Gondola
+
+10 seconds
+
+X-10 Skating pond w/ 20 sec of Peanuts Xmas time playing
+
+20 sec
+
+X-10 Skiers
+
+10 sec
+
+X-10 Sledders
+
+10 sec
+
+X-10 Birds with 10 sec of birds chirping.
+
+10 sec
+
+X-10 Cross Country Skiers
+
+10 sec
+
+X-10 Vegas display
+
+20 sec
+
+X-10 Carnival
+
+10 sec
+
+X-10 Train power
+
+Shutdown reverse above with 3 second interval (ensures X-10 signal gets thru) and after trains at shutdown positions.
+
+Ultimately want to say to Alexa “shutdown Xmas display” which will relay to Raspberry Pi X-10 to start shutdown sequence but an X-10 clicker (macro shutdown) will be backup. Alexa will shut off display smartplug after a specified time which shuts off remaining display lights still on and any Rasp Pi’s not needed.
+
+Audience push buttons (GPIO’s) Rasp Pi:
+
+Dogs singing Jingle Bells ---- 20 sec
+
+Birds chirping – 10 sec (which is part of startup routine)
+
+Village river fog – 3-5 minutes of fog turned on with an X-10
+
+Wigwag signal turn on and play sound approx 10 sec (part of Vegas train)
+
+ 
+
+Have drive in sound for 20 sec but has it’s own Pi.
+
+Village station has a Xmas carol button but completely separate using a Xmas card guts. Probably should change to using Rasp Pi.
+
+ 
+
+Rasp Pi Sound (Picture relays turning on/off to direct sound to correct various speakers in the display)
+
+Skaters
+
+Dogs
+
+Birds
+
+Train Stations
+
+Wig Wag
+
+(Future Carnival)
+
+Stereo background music downloaded when display comes on.
+
+ 
+
+Other Pi interaction:
+
+Want to say Alexa
+
+ turn off/on trains (shutdown procedure needed to take place first)
+
+turn on/off sound (maybe turn off background music separately).  (Maybe a relay controls common speaker wire)
+
+Raise sound volume up and down (have to contol Pi's output level somehow)

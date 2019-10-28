@@ -1,0 +1,40 @@
+Trains 3 steps of implementation –maybe 1 each year implementation to complete
+
+Train Layout
+
+                Oval, Village bank-forth (bumpers), Vegas back-forth (bumpers)
+
+Oval, mountain in  back center and train station
+Village, mountains either end and station in center
+Vegas, mountain one end, two stations and exposed other end.  Wig-wag between stations.
+Phase 1 --- analog all 3 track lines (relays or motor controller gizmo)
+
+Phase 2 ---- introduce DCC (track always 12 volts).  No bumpers.  So Pi sends signal to specific trolley to go  forward/backward/speed/ maybe play sound/lights on/off.
+
+Phase 3 ---- with DCC add a second trolley to all tracks. (in advance think minimum Vegas needs 5 reeds, 2 outer at each end for each trolley and 2 (carnival reed is an outer reed also) stations.  Village 5 reeds 2 outer and 1 station.  Oval, maybe 4 to keep from 2 trolleys bumping each other)
+
+Variations ---Phase 1 only (ignoring 2 and 3 for DCC a big change)
+
+                Oval  (two reeds)
+
+                                Where am I (startup)? Simply turn on max power, when reaches station it stops
+
+                                1 lap with stop in Mountain and station
+
+   1 lap blow thru all stops at max speed then stop at station (in nearly all cases same as Where am I but with deceleration
+
+                                Shutdown normal, go to station immediately
+
+                                Shutdown lost (can’t find trolley after certain period)
+
+                Vegas (3 reeds, 2 stations 1 mountain)
+
+Where am I? more complex since need 2 reed readings to get direction so stop at main station headed toward carnival station not mountain.
+
+1 trip stop at Carnival reed. Full speed into bumper (foot away) Either stop upon rebound at carnival reed or ignore and stop at main station Stop inside mountain reed. Full power into bumper. Stop at main station reed.
+
+Shutdown normal full power Trolley at main station.
+
+Shutdown lost (can’t find trolley)
+
+                Village  (same as Vegas except the Carnival reed becomes 2nd mountain reed).
