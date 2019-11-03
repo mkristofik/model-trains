@@ -25,7 +25,6 @@ import time
 class IoPin(Enum):
     SENSOR_STATION = 12
     SENSOR_MOUNTAIN = 14
-    SENSOR_SLOWDOWN = 16
     TRAIN_FORWARD = 23
     TRAIN_BACKWARD = 24
     TRAIN_VELOCITY = 25
@@ -43,22 +42,19 @@ def is_sensor_hit(pin):
 class State(Enum):
     DEPARTING = 1
     TO_MOUNTAIN = 2
-    MOUNTAIN_MAYBE = 3
-    MOUNTAIN = 4
-    FROM_MOUNTAIN = 5
-    SLOWDOWN_MAYBE = 6
-    SLOWDOWN = 7
-    TO_STATION = 8
-    STATION_MAYBE = 9
-    STATION = 10
+    MOUNTAIN = 3
+    TO_STATION = 4
+    STATION = 5
 
 
 class StateMachine():
     def __init__(self):
-        self.state = State.DEPARTING
+        self.state = State.TO_STATION
         self.startTime_sec = 0  # put units on your variable names
         self.soundsPlayed = 0
+        self.sensorHits = 0
         # self.velo = gpio.PWM(IoPin.TRAIN_VELOCITY, 1000)
+        # self.velo.ChangeDutyCycle(50)  # Medium speed
 
 
     def transition(self, newState):
@@ -66,6 +62,7 @@ class StateMachine():
         self.state = newState
         self.startTime_sec = time.perf_counter()
         self.soundsPlayed = 0
+        self.sensorHits = 0
 
 
     def run(self):
@@ -101,53 +98,37 @@ class StateMachine():
         elif self.state == State.TO_MOUNTAIN:
             # Start looking for the mountain reed sensor.
             if is_sensor_hit(IoPin.SENSOR_MOUNTAIN):
-                self.transition(State.MOUNTAIN_MAYBE)
-
-        elif self.state == State.MOUNTAIN_MAYBE:
+                sensorHits += 1
+            else:
+                sensorHits = 0
             # Need two consecutive reed sensor hits to really be inside the
             # mountain. If not, assume false positive.
-            if is_sensor_hit(IoPin.SENSOR_MOUNTAIN):
+            if sensorHits >= 2:
                 self.transition(State.MOUNTAIN)
-            else:
-                self.transition(State.TO_MOUNTAIN)
 
         elif self.state == State.MOUNTAIN:
-            # Stop inside the mountain for 30 seconds.
-            if elapsed_sec < 30:
-                # self.velo.ChangeDutyCycle(0)  # stopped
-                pass
-            else:
-                # self.velo.ChangeDutyCycle(75)  # high speed
-                self.transition(State.FROM_MOUNTAIN)
-
-        elif self.state == State.FROM_MOUNTAIN:
-            if is_sensor_hit(IoPin.SENSOR_SLOWDOWN):
-                self.transition(State.SLOWDOWN_MAYBE)
-
-        elif self.state == State.SLOWDOWN_MAYBE:
-            if is_sensor_hit(IoPin.SENSOR_SLOWDOWN):
-                self.transition(State.SLOWDOWN)
-            else:
-                self.transition(State.FROM_MOUNTAIN)
-
-        elif self.state == State.SLOWDOWN:
             # Decelerate to low speed, then start looking for the station reed sensor.
-            if elapsed_sec > 3:
+            if elapsed_sec > 63:
                 # self.velo.ChangeDutyCycle(25)  # low speed
                 self.transition(State.TO_STATION)
-            else:
+            elif elapsed_sec > 60:
                 # self.velo.ChangeDutyCycle(50)  # medium speed
+                pass
+            elif elapsed_sec > 30:
+                # self.velo.ChangeDutyCycle(75)  # high speed
+                pass
+            # Stop inside the mountain for 30 seconds.
+            else:
+                # self.velo.ChangeDutyCycle(0)  # stopped
                 pass
 
         elif self.state == State.TO_STATION:
             if is_sensor_hit(IoPin.SENSOR_STATION):
-                self.transition(State.STATION_MAYBE)
-
-        elif self.state == State.STATION_MAYBE:
-            if is_sensor_hit(IoPin.SENSOR_STATION):
-                self.transition(State.STATION)
+                sensorHits += 1
             else:
-                self.transition(State.TO_STATION)
+                sensorHits = 0
+            if sensorHits >= 2:
+                self.transition(State.STATION)
 
         elif self.state == State.STATION:
             if elapsed_sec > 25:
