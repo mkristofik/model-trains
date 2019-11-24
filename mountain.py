@@ -102,7 +102,6 @@ class StateMachine():
                 # accelerate at 10 units per second
                 speed = math.floor(elapsed_sec - 9) * 10 + 35
                 # self.velo.ChangeDutyCycle(speed)
-                pass
             elif elapsed_sec > 7:
                 # self.velo.ChangeDutyCycle(35)  # Pull away slowly
                 pass
@@ -136,7 +135,6 @@ class StateMachine():
                 # decelerate at 10 units per second
                 speed = 75 - math.floor(elapsed_sec - 60) * 10
                 # self.velo.ChangeDutyCycle(speed)
-                pass
             elif elapsed_sec > 30:
                 # self.velo.ChangeDutyCycle(75)  # high speed
                 pass
