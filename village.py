@@ -98,6 +98,14 @@ class StateMachine():
         return self.sensorHits >= 2
 
 
+    def check_station_sensor(self):
+        if is_sensor_hit(SENSOR_STATION):
+            self.sensorHits += 1
+        else:
+            self.sensorHits = 0
+        return self.sensorHits >= 2
+
+
     def run(self):
         self.check_shutdown()
 
@@ -136,13 +144,8 @@ class StateMachine():
 
         elif self.state == State.INBOUND:
             if elapsed_sec > 36:
-                # Start looking for the station sensor.
-                if is_sensor_hit(SENSOR_STATION):
-                    self.sensorHits += 1
-                    if self.sensorHits >= 2:
-                        self.transition(State.STATION)
-                else:
-                    self.sensorHits = 0
+                if check_station_sensor():
+                    self.transition(State.STATION)
             elif elapsed_sec > 32:
                 # decelerate at 10 units per second
                 speed = 75 - math.floor(elapsed_sec - 32) * 10
@@ -166,12 +169,8 @@ class StateMachine():
             # Proceed at medium speed from wherever we are until we reach the
             # station. It doesn't matter which direction we're facing.
             # self.velo.ChangeDutyCycle(55)  # medium speed
-            if is_sensor_hit(SENSOR_STATION):
-                self.sensorHits += 1
-                if self.sensorHits >= 2:
-                    self.transition(State.SHUTDOWN)
-            else:
-                self.sensorHits = 0
+            if check_station_sensor():
+                self.transition(State.SHUTDOWN)
 
         elif self.state == State.SHUTDOWN:
             # self.velo.ChangeDutyCycle(0)
