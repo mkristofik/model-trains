@@ -179,12 +179,20 @@ class StateMachine():
 
 
 if __name__ == '__main__':
-    # TODO: init GPIO and pins
+    # init GPIO and pins
+    # gpio.setmode(gpio.BOARD)
+    # gpio.setup(SENSOR_STATION, gpio.IN)
+    # gpio.setup(SENSOR_MOUNTAIN_L, gpio.IN)
+    # gpio.setup(SENSOR_MOUNTAIN_R, gpio.IN)
+    # gpio.setup(INPUT_SHUTDOWN, gpio.IN)
+    # gpio.setup(TRAIN_VELOCITY, gpio.OUT)
+    # gpio.setup(OUTPUT_SHUTDOWN, gpio.OUT)
+
     machine = StateMachine()
     try:
         while True:
             machine.run()
             time.sleep(0.2)  # 5 Hz clock
     finally:
-        # TODO: GPIO cleanup
+        # gpio.cleanup()
         pass
