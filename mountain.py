@@ -20,6 +20,7 @@ copied from Dad's email:
 from enum import Enum
 import RPi.GPIO as gpio
 import math
+import pygame
 import time
 
 
@@ -64,6 +65,11 @@ class StateMachine():
         self.velo = gpio.PWM(IoPin.TRAIN_VELOCITY.value, 1000)
         self.velo.start(55)  # Medium speed
 
+        self.sndIntro = pygame.mixer.Sound('/home/pi/Documents/Merry_Xmas_All_Aboard_v2_nl.wav')
+        self.sndIntro.set_volume(0.3)
+        self.sndToot = pygame.mixer.Sound('/home/pi/Documents/toot_toot_nl.wav')
+        self.sndToot.set_volume(0.2)
+
 
     def transition(self, newState):
         print('Switching to', newState.name)
@@ -100,25 +106,25 @@ class StateMachine():
 
             # Define the timeline in reverse order so sounds don't get played
             # more than once.
-            if elapsed_sec > 13:
+            if elapsed_sec > 17:
                 self.velo.ChangeDutyCycle(75)  # High speed
                 self.transition(State.TO_MOUNTAIN)
-            elif elapsed_sec > 9:
+            elif elapsed_sec > 13:
                 # accelerate at 10 units per second
-                speed = math.floor(elapsed_sec - 9) * 10 + 35
+                speed = math.floor(elapsed_sec - 13) * 10 + 35
                 self.velo.ChangeDutyCycle(speed)
-            elif elapsed_sec > 7:
-                print('Accelerate slowly')
+            elif elapsed_sec > 11:
                 self.velo.ChangeDutyCycle(35)  # Pull away slowly
-            elif elapsed_sec > 6 and self.soundsPlayed == 2:
-                # TODO: play 'toot'
+            elif elapsed_sec > 7 and self.soundsPlayed == 2:
+                print('Accelerate slowly')
+                self.sndToot.play()
                 self.soundsPlayed += 1
             elif elapsed_sec > 5 and self.soundsPlayed == 1:
-                # TODO: play 'toot'
+                self.sndToot.play()
                 self.soundsPlayed += 1
             elif self.soundsPlayed == 0:
-                # TODO: play 'All Aboard!'
                 print('All aboard')
+                self.sndIntro.play()
                 self.soundsPlayed += 1
 
         elif self.state == State.TO_MOUNTAIN:
@@ -134,19 +140,18 @@ class StateMachine():
 
         elif self.state == State.MOUNTAIN:
             # Decelerate to low speed, then start looking for the station reed sensor.
-            if elapsed_sec > 64:
+            if elapsed_sec > 44:
                 print('Now apporaching station')
                 self.velo.ChangeDutyCycle(35)  # low speed
                 self.transition(State.TO_STATION)
-            elif elapsed_sec > 60:
+            elif elapsed_sec > 40:
                 # decelerate at 10 units per second
-                speed = 75 - math.floor(elapsed_sec - 60) * 10
+                speed = 75 - math.floor(elapsed_sec - 40) * 10
                 self.velo.ChangeDutyCycle(speed)
-            elif elapsed_sec > 30:
+            elif elapsed_sec > 10:  # TODO: time shortened for debugging
                 self.velo.ChangeDutyCycle(75)  # high speed
             # Stop inside the mountain for 30 seconds.
             else:
-                print('Stopped inside mountain')
                 self.velo.ChangeDutyCycle(0)  # stopped
 
         elif self.state == State.TO_STATION:
@@ -158,7 +163,7 @@ class StateMachine():
                 self.transition(State.STATION)
 
         elif self.state == State.STATION:
-            if elapsed_sec > 25:
+            if elapsed_sec > 10:  # TODO: was 25, shortened for debugging
                 self.transition(State.DEPARTING)
             elif self.soundsPlayed == 0:
                 self.velo.ChangeDutyCycle(0)  # stopped
@@ -182,6 +187,8 @@ class StateMachine():
 
 
 if __name__ == '__main__':
+    pygame.init()
+
     # init GPIO and pins
     gpio.setmode(gpio.BOARD)
     gpio.setup(IoPin.SENSOR_STATION.value, gpio.IN)
