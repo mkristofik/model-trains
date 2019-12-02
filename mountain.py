@@ -32,8 +32,8 @@ class IoPin(Enum):
     TRAIN_FORWARD = 8
     TRAIN_BACKWARD = 10
     TRAIN_VELOCITY = 12
-    INPUT_SHUTDOWN = 35
-    OUTPUT_SHUTDOWN = 37
+    INPUT_SHUTDOWN = 37
+    OUTPUT_SHUTDOWN = 35
 
 
 def is_sensor_hit(pin):
@@ -184,6 +184,9 @@ class StateMachine():
         elif self.state == State.SHUTDOWN:
             self.velo.ChangeDutyCycle(0)
             gpio.output(IoPin.OUTPUT_SHUTDOWN.value, gpio.HIGH)
+            time.sleep(5)  # TODO: Adjust this as needed to make sure the
+                           # master Pi sees the signal.
+            return True
 
 
 if __name__ == '__main__':
@@ -201,10 +204,13 @@ if __name__ == '__main__':
 
     machine = StateMachine()
     try:
-        while True:
-            machine.run()
+        isDone = False
+        while not isDone:
+            isDone = machine.run()
             time.sleep(0.05)  # 20 Hz clock
     except KeyboardInterrupt:
         print('Stopping manually')
     finally:
         gpio.cleanup()
+
+    print('Bye!')

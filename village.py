@@ -38,7 +38,7 @@ SENSOR_MOUNTAIN_R = 40
 TRAIN_FORWARD = 3
 TRAIN_BACKWARD = 5
 TRAIN_VELOCITY = 7
-INPUT_SHUTDOWN = 35
+INPUT_SHUTDOWN = 37
 OUTPUT_SHUTDOWN = 33
 
 
@@ -178,13 +178,16 @@ class StateMachine():
         elif self.state == State.SHUTTING_DOWN:
             # Proceed at medium speed from wherever we are until we reach the
             # station. It doesn't matter which direction we're facing.
-            self.velo.ChangeDutyCycle(55)  # medium speed
+            self.velo.ChangeDutyCycle(65)  # medium speed
             if self.check_station_sensor():
                 self.transition(State.SHUTDOWN)
 
         elif self.state == State.SHUTDOWN:
             self.velo.ChangeDutyCycle(0)
             gpio.output(OUTPUT_SHUTDOWN, gpio.HIGH)
+            time.sleep(5)  # TODO: Adjust this as needed to make sure master Pi
+                           # sees the signal.
+            return True
 
 
 if __name__ == '__main__':
@@ -201,10 +204,12 @@ if __name__ == '__main__':
 
     machine = StateMachine()
     try:
-        while True:
-            machine.run()
+        isDone = False
+        while not isDone:
+            isDone = machine.run()
             time.sleep(0.02)  # 50 Hz clock
     except KeyboardInterrupt:
         print('Stopping manually')
     finally:
+        print('Bye!')
         gpio.cleanup()
