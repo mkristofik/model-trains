@@ -18,6 +18,7 @@ copied from Dad's email:
       TBD how it's commanded, trolley is sitting at station.
 """
 from enum import Enum
+import RPi.GPIO as gpio
 import math
 import time
 
@@ -25,18 +26,19 @@ import time
 # Defining constants to give names to the GPIO pins we're using. Adjust the
 # numbers as needed.
 class IoPin(Enum):
-    SENSOR_STATION = 12
-    SENSOR_MOUNTAIN = 14
-    TRAIN_FORWARD = 23
-    TRAIN_BACKWARD = 24
-    TRAIN_VELOCITY = 25
-    INPUT_SHUTDOWN = 31
-    OUTPUT_SHUTDOWN = 32
+    SENSOR_STATION = 32
+    SENSOR_MOUNTAIN = 26
+    TRAIN_FORWARD = 8
+    TRAIN_BACKWARD = 10
+    TRAIN_VELOCITY = 12
+    INPUT_SHUTDOWN = 37
+    OUTPUT_SHUTDOWN = 38
 
 
 def is_sensor_hit(pin):
-    # return gpio.input(pin.value) == 1
-    return False
+    if (gpio.input(pin.value)) == 1:
+        print('Sensor', pin)
+    return gpio.input(pin.value) == 1
 
 
 class State(Enum):
@@ -56,8 +58,11 @@ class StateMachine():
         self.soundsPlayed = 0
         self.sensorHits = 0
         self.shutdownHits = 0
-        # self.velo = gpio.PWM(IoPin.TRAIN_VELOCITY, 1000)
-        # self.velo.ChangeDutyCycle(55)  # Medium speed
+
+        gpio.output(IoPin.TRAIN_FORWARD.value, gpio.HIGH)
+        gpio.output(IoPin.TRAIN_BACKWARD.value, gpio.LOW)
+        self.velo = gpio.PWM(IoPin.TRAIN_VELOCITY.value, 1000)
+        self.velo.start(55)  # Medium speed
 
 
     def transition(self, newState):
@@ -96,15 +101,15 @@ class StateMachine():
             # Define the timeline in reverse order so sounds don't get played
             # more than once.
             if elapsed_sec > 13:
-                # self.velo.ChangeDutyCycle(75)  # High speed
+                self.velo.ChangeDutyCycle(75)  # High speed
                 self.transition(State.TO_MOUNTAIN)
             elif elapsed_sec > 9:
                 # accelerate at 10 units per second
                 speed = math.floor(elapsed_sec - 9) * 10 + 35
-                # self.velo.ChangeDutyCycle(speed)
+                self.velo.ChangeDutyCycle(speed)
             elif elapsed_sec > 7:
-                # self.velo.ChangeDutyCycle(35)  # Pull away slowly
-                pass
+                print('Accelerate slowly')
+                self.velo.ChangeDutyCycle(35)  # Pull away slowly
             elif elapsed_sec > 6 and self.soundsPlayed == 2:
                 # TODO: play 'toot'
                 self.soundsPlayed += 1
@@ -113,6 +118,7 @@ class StateMachine():
                 self.soundsPlayed += 1
             elif self.soundsPlayed == 0:
                 # TODO: play 'All Aboard!'
+                print('All aboard')
                 self.soundsPlayed += 1
 
         elif self.state == State.TO_MOUNTAIN:
@@ -129,19 +135,19 @@ class StateMachine():
         elif self.state == State.MOUNTAIN:
             # Decelerate to low speed, then start looking for the station reed sensor.
             if elapsed_sec > 64:
-                # self.velo.ChangeDutyCycle(35)  # low speed
+                print('Now apporaching station')
+                self.velo.ChangeDutyCycle(35)  # low speed
                 self.transition(State.TO_STATION)
             elif elapsed_sec > 60:
                 # decelerate at 10 units per second
                 speed = 75 - math.floor(elapsed_sec - 60) * 10
-                # self.velo.ChangeDutyCycle(speed)
+                self.velo.ChangeDutyCycle(speed)
             elif elapsed_sec > 30:
-                # self.velo.ChangeDutyCycle(75)  # high speed
-                pass
+                self.velo.ChangeDutyCycle(75)  # high speed
             # Stop inside the mountain for 30 seconds.
             else:
-                # self.velo.ChangeDutyCycle(0)  # stopped
-                pass
+                print('Stopped inside mountain')
+                self.velo.ChangeDutyCycle(0)  # stopped
 
         elif self.state == State.TO_STATION:
             if is_sensor_hit(IoPin.SENSOR_STATION):
@@ -155,14 +161,14 @@ class StateMachine():
             if elapsed_sec > 25:
                 self.transition(State.DEPARTING)
             elif self.soundsPlayed == 0:
-                # self.velo.ChangeDutyCycle(0)  # stopped
+                self.velo.ChangeDutyCycle(0)  # stopped
                 # TODO: play 'Welcome to Christmas village'
                 self.soundsPlayed = 1
 
         elif self.state == State.SHUTTING_DOWN:
             # Proceed at medium speed from wherever we are until we arrive at
             # the station.
-            # self.velo.ChangeDutyCycle(55)
+            self.velo.ChangeDutyCycle(55)
             if is_sensor_hit(IoPin.SENSOR_STATION):
                 self.sensorHits += 1
             else:
@@ -171,25 +177,27 @@ class StateMachine():
                 self.transition(State.SHUTDOWN)
 
         elif self.state == State.SHUTDOWN:
-            # self.velo.ChangeDutyCycle(0)
-            # gpio.output(IoPin.OUTPUT_SHUTDOWN, gpio.HIGH)
-            pass
+            self.velo.ChangeDutyCycle(0)
+            gpio.output(IoPin.OUTPUT_SHUTDOWN.value, gpio.HIGH)
 
 
 if __name__ == '__main__':
     # init GPIO and pins
-    # gpio.setmode(gpio.BOARD)
-    # gpio.setup(IoPin.SENSOR_STATION, gpio.IN)
-    # gpio.setup(IoPin.SENSOR_MOUNTAIN, gpio.IN)
-    # gpio.setup(IoPin.INPUT_SHUTDOWN, gpio.IN)
-    # gpio.setup(IoPin.TRAIN_VELOCITY, gpio.OUT)
-    # gpio.setup(IoPin.OUTPUT_SHUTDOWN, gpio.OUT)
+    gpio.setmode(gpio.BOARD)
+    gpio.setup(IoPin.SENSOR_STATION.value, gpio.IN)
+    gpio.setup(IoPin.SENSOR_MOUNTAIN.value, gpio.IN)
+    gpio.setup(IoPin.INPUT_SHUTDOWN.value, gpio.IN)
+    gpio.setup(IoPin.TRAIN_VELOCITY.value, gpio.OUT)
+    gpio.setup(IoPin.TRAIN_FORWARD.value, gpio.OUT)
+    gpio.setup(IoPin.TRAIN_BACKWARD.value, gpio.OUT)
+    gpio.setup(IoPin.OUTPUT_SHUTDOWN.value, gpio.OUT)
 
     machine = StateMachine()
     try:
         while True:
             machine.run()
-            time.sleep(0.2)  # 5 Hz clock
+            time.sleep(0.05)  # 20 Hz clock
+    except KeyboardInterrupt:
+        print('Stopping manually')
     finally:
-        # gpio.cleanup()
-        pass
+        gpio.cleanup()
