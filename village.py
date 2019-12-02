@@ -35,9 +35,11 @@ import time
 SENSOR_STATION = 38
 SENSOR_MOUNTAIN_L = 36
 SENSOR_MOUNTAIN_R = 40
+TRAIN_FORWARD = 3
+TRAIN_BACKWARD = 5
 TRAIN_VELOCITY = 7
-INPUT_SHUTDOWN = 23
-OUTPUT_SHUTDOWN = 24
+INPUT_SHUTDOWN = 35
+OUTPUT_SHUTDOWN = 33
 
 
 # Defining constants for the different states.
@@ -68,8 +70,11 @@ class StateMachine():
         self.soundPlayed = False
         self.sensorHits = 0
         self.shutdownHits = 0
+
+        gpio.output(TRAIN_FORWARD, gpio.HIGH)
+        gpio.output(TRAIN_BACKWARD, gpio.LOW)
         self.velo = gpio.PWM(TRAIN_VELOCITY, 1000)
-        self.velo.start(55)  # Medium speed
+        self.velo.start(65)  # Medium speed
 
 
     def transition(self, newState):
@@ -120,15 +125,17 @@ class StateMachine():
             # Play departure announcement and accelerate out of the station.
             # Start looking for the mountain reed.  As with the other script,
             # define the timings in reverse order so things don't get repeated.
-            if elapsed_sec > 10:
-                self.velo.ChangeDutyCycle(75)  # High speed
+            if elapsed_sec > 5:
+                self.velo.ChangeDutyCycle(65)  # Medium speed
                 if self.check_mountain_sensor():
                     self.transition(State.OUTBOUND)
-            elif elapsed_sec > 5:
-                speed = math.floor(elapsed_sec - 5) * 10 + 35
-                self.velo.ChangeDutyCycle(speed)
+            # Disabling smooth acceleration to avoid moving too slowly
+            # through the curve when sharing power with the other train line.
+            #elif elapsed_sec > 5:
+                #speed = math.floor(elapsed_sec - 5) * 10 + 35
+                #self.velo.ChangeDutyCycle(speed)
             elif not self.soundPlayed:
-                # play 'Now departing station'
+                # TODO: play 'Now departing station'
                 self.soundPlayed = True
 
         elif self.state == State.OUTBOUND:
@@ -136,30 +143,32 @@ class StateMachine():
             # visiting some far-off station. After some time, set medium speed
             # to hit the bumper and reverse. Sit inside the mountain again, and
             # then approach the station.
-            if elapsed_sec > 32:
+            if elapsed_sec > 11:
                 if self.check_mountain_sensor():
                     self.transition(State.INBOUND)
-            elif elapsed_sec > 30:
-                self.velo.ChangeDutyCycle(55)  # medium speed
+            elif elapsed_sec > 10:  # TODO: was 30, shortened for debugging.
+                self.velo.ChangeDutyCycle(65)  # medium speed
             else:
                 self.velo.ChangeDutyCycle(0)  # stopped
 
         elif self.state == State.INBOUND:
-            if elapsed_sec > 36:
-                if check_station_sensor():
+            if elapsed_sec > 11:
+                if self.check_station_sensor():
                     self.transition(State.STATION)
-            elif elapsed_sec > 32:
+            # Disabling smooth deceleration for now to avoid the possibility
+            # of the train getting stuck at a bumper. If we ever miss a
+            # sensor hit, we could be moving too slowly to reverse.
+            #elif elapsed_sec > 12:
                 # decelerate at 10 units per second
-                speed = 75 - math.floor(elapsed_sec - 32) * 10
-                self.velo.ChangeDutyCycle(speed)
-            elif elapsed_sec > 30:
-                self.velo.ChangeDutyCycle(75)  # high speed
-                pass
+                #speed = 75 - math.floor(elapsed_sec - 12) * 10
+                #self.velo.ChangeDutyCycle(speed)
+            elif elapsed_sec > 10:  # TODO: was 30, shortened for debugging
+                self.velo.ChangeDutyCycle(65)  # medium speed
             else:
                 self.velo.ChangeDutyCycle(0)  # stopped
 
         elif self.state == State.STATION:
-            if elapsed_sec > 30:
+            if elapsed_sec > 10:  # TODO: was 30, shortened for debugging
                 self.transition(State.DEPARTING)
             elif not self.soundPlayed:
                 self.velo.ChangeDutyCycle(0)  # stopped
@@ -170,7 +179,7 @@ class StateMachine():
             # Proceed at medium speed from wherever we are until we reach the
             # station. It doesn't matter which direction we're facing.
             self.velo.ChangeDutyCycle(55)  # medium speed
-            if check_station_sensor():
+            if self.check_station_sensor():
                 self.transition(State.SHUTDOWN)
 
         elif self.state == State.SHUTDOWN:
@@ -185,6 +194,8 @@ if __name__ == '__main__':
     gpio.setup(SENSOR_MOUNTAIN_L, gpio.IN)
     gpio.setup(SENSOR_MOUNTAIN_R, gpio.IN)
     gpio.setup(INPUT_SHUTDOWN, gpio.IN)
+    gpio.setup(TRAIN_FORWARD, gpio.OUT)
+    gpio.setup(TRAIN_BACKWARD, gpio.OUT)
     gpio.setup(TRAIN_VELOCITY, gpio.OUT)
     gpio.setup(OUTPUT_SHUTDOWN, gpio.OUT)
 
@@ -192,7 +203,7 @@ if __name__ == '__main__':
     try:
         while True:
             machine.run()
-            time.sleep(0.05)  # 20 Hz clock
+            time.sleep(0.02)  # 50 Hz clock
     except KeyboardInterrupt:
         print('Stopping manually')
     finally:
