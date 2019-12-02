@@ -41,4 +41,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('Stopping manually')
     finally:
+        gpio.output(OUTPUT_SHUTDOWN, gpio.LOW)
         gpio.cleanup()
