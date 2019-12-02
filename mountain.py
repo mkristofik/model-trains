@@ -32,8 +32,8 @@ class IoPin(Enum):
     TRAIN_FORWARD = 8
     TRAIN_BACKWARD = 10
     TRAIN_VELOCITY = 12
-    INPUT_SHUTDOWN = 37
-    OUTPUT_SHUTDOWN = 38
+    INPUT_SHUTDOWN = 27
+    OUTPUT_SHUTDOWN = 28
 
 
 def is_sensor_hit(pin):
