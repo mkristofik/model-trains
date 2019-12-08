@@ -139,16 +139,20 @@ class StateMachine():
                 self.transition(State.MOUNTAIN)
 
         elif self.state == State.MOUNTAIN:
+            stopped_sec = 10  # how long to stop inside the mountain
+            drive_sec = stopped_sec + 30  # how long to drive at full speed after leaving
+                                          # the mountain
+
             # Decelerate to low speed, then start looking for the station reed sensor.
-            if elapsed_sec > 44:
+            if elapsed_sec > drive_sec + 4:
                 print('Now apporaching station')
                 self.velo.ChangeDutyCycle(35)  # low speed
                 self.transition(State.TO_STATION)
-            elif elapsed_sec > 40:
+            elif elapsed_sec > drive_sec:
                 # decelerate at 10 units per second
-                speed = 75 - math.floor(elapsed_sec - 40) * 10
+                speed = 75 - math.floor(elapsed_sec - drive_sec) * 10
                 self.velo.ChangeDutyCycle(speed)
-            elif elapsed_sec > 10:  # TODO: time shortened for debugging
+            elif elapsed_sec > stopped_sec:
                 self.velo.ChangeDutyCycle(75)  # high speed
             # Stop inside the mountain for 30 seconds.
             else:
