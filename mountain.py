@@ -207,7 +207,7 @@ if __name__ == '__main__':
         isDone = False
         while not isDone:
             isDone = machine.run()
-            time.sleep(0.05)  # 20 Hz clock
+            time.sleep(0.02)  # 50 Hz clock
     except KeyboardInterrupt:
         print('Stopping manually')
     finally:
