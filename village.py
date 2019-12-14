@@ -67,6 +67,7 @@ class StateMachine():
     def __init__(self):
         self.state = State.DEPARTING
         self.startTime_sec = 0  # put units on your variable names
+        self.overallStartTime_sec = time.perf_counter()
         self.soundPlayed = False
         self.sensorHits = 0
         self.shutdownHits = 0
@@ -88,11 +89,15 @@ class StateMachine():
     def check_shutdown(self):
         if self.state == State.SHUTDOWN or self.state == State.SHUTTING_DOWN:
             return
+
         if is_sensor_hit(INPUT_SHUTDOWN):
             self.shutdownHits += 1
         else:
             self.shutdownHits = 0
-        if self.shutdownHits >= 2:
+
+        overallElapsed_sec = time.perf_counter() - self.overallStartTime_sec
+
+        if self.shutdownHits >= 2 or overallElapsed_sec >= 15 * 60:
             if self.state == State.STATION:
                 self.transition(State.SHUTDOWN)
             else:
